@@ -12,6 +12,13 @@ const VERDE = 0x1f4526;
 const VERDE_HOVER = 0x2b5a35;
 const GRAFITE = 0x2b2b28;
 
+// Pisada do degrau feita de tábuas inteiras: o número que chega mais perto da
+// profundidade de referência (mínimo duas).
+function pisadaDegrau(bw, g) {
+  const nt = Math.max(2, Math.round((CONFIG.profundidadeDegrau + g) / (bw + g)));
+  return { nt, prof: nt * bw + (nt - 1) * g };
+}
+
 // Tábua extrudada a partir do perfil real: cantos de cima arredondados (raio do deck),
 // cantos de baixo quase retos. Comprimento no eixo X, largura no Z, espessura no Y.
 function geometriaTabua(THREE_, comp, esp, larg, raioTopo) {
@@ -122,17 +129,169 @@ export function iniciar3D(sim) {
   cena.add(chao);
 
   const caixa = new THREE.BoxGeometry(1, 1, 1);
-  const parede = new THREE.Mesh(
-    caixa,
-    new THREE.MeshStandardMaterial({ color: 0xe4e1d8, roughness: 0.95 }),
-  );
-  parede.castShadow = parede.receiveShadow = true;
-  cena.add(parede);
-  const porta = new THREE.Mesh(
-    caixa,
-    new THREE.MeshStandardMaterial({ color: 0x2f3b3f, roughness: 0.2, metalness: 0.1 }),
-  );
-  cena.add(porta);
+  const anisotropia = renderer.capabilities.getMaxAnisotropy();
+
+  // reboco da fachada: claro, com leve variação
+  const texReboco = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const g = c.getContext('2d');
+    g.fillStyle = '#ece8df';
+    g.fillRect(0, 0, 512, 512);
+    let r = 97;
+    const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 9000; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.035)' : 'rgba(255,255,255,0.05)';
+      const s = 1 + rnd() * 2.5;
+      g.fillRect(rnd() * 512, rnd() * 512, s, s);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  })();
+
+  // piso de concreto em placas de 60 cm (a textura cobre 2,4 × 2,4 m)
+  const texPiso = (() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1024;
+    const g = c.getContext('2d');
+    let r = 31;
+    const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    const placa = 256;
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++) {
+        const tom = 214 + Math.round(rnd() * 10 - 5);
+        g.fillStyle = `rgb(${tom},${tom - 3},${tom - 10})`;
+        g.fillRect(i * placa, j * placa, placa, placa);
+      }
+    for (let i = 0; i < 26000; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+      g.fillRect(rnd() * 1024, rnd() * 1024, 1.5, 1.5);
+    }
+    g.fillStyle = 'rgba(120,112,100,0.55)';
+    for (let k = 0; k <= 4; k++) {
+      g.fillRect(k * placa - 1.5, 0, 3, 1024);
+      g.fillRect(0, k * placa - 1.5, 1024, 3);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = anisotropia;
+    return t;
+  })();
+
+  // o piso some suavemente nas laterais e na frente; junto à parede fica inteiro
+  const texFade = (() => {
+    const N = 256;
+    const c = document.createElement('canvas');
+    c.width = c.height = N;
+    const g = c.getContext('2d');
+    const img = g.createImageData(N, N);
+    const suave = (a, b, x) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        const u = x / (N - 1);
+        const v = y / (N - 1); // 0 = parede, 1 = frente
+        const a = suave(0, 0.22, u) * suave(0, 0.22, 1 - u) * suave(0, 0.3, 1 - v);
+        const k = (y * N + x) * 4;
+        img.data[k] = img.data[k + 1] = img.data[k + 2] = Math.round(a * 255);
+        img.data[k + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
+    return new THREE.CanvasTexture(c);
+  })();
+
+  const matReboco = new THREE.MeshStandardMaterial({ map: texReboco, roughness: 0.95 });
+  const matBase = new THREE.MeshStandardMaterial({ color: 0xc9c3b7, roughness: 0.95 });
+  const matMarquise = new THREE.MeshStandardMaterial({ color: 0xf3f1ec, roughness: 0.9 });
+  const matCaixilho = new THREE.MeshStandardMaterial({
+    color: 0x2b2f31,
+    roughness: 0.38,
+    metalness: 0.55,
+  });
+  const matVidro = new THREE.MeshStandardMaterial({
+    color: 0x4f6168,
+    roughness: 0.06,
+    metalness: 0.25,
+    envMapIntensity: 1.6,
+  });
+  const matPiso = new THREE.MeshStandardMaterial({
+    map: texPiso,
+    alphaMap: texFade,
+    transparent: true,
+    depthWrite: false,
+    roughness: 0.92,
+  });
+  let fachada = new THREE.Group();
+  cena.add(fachada);
+  const piso = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), matPiso);
+  piso.rotation.x = -Math.PI / 2;
+  piso.receiveShadow = true;
+  piso.renderOrder = -1;
+  cena.add(piso);
+
+  // fachada simples: parede rebocada, base de concreto, porta de vidro de correr,
+  // janelas com peitoril e marquise
+  function construirFachada(w, h) {
+    cena.remove(fachada);
+    fachada = new THREE.Group();
+    cena.add(fachada);
+    const bloco = (mat, sx, sy, sz, x, y, z, sombra = true) => {
+      const m = new THREE.Mesh(caixa, mat);
+      m.scale.set(sx, sy, sz);
+      m.position.set(x, y, z);
+      m.castShadow = sombra;
+      m.receiveShadow = true;
+      fachada.add(m);
+      return m;
+    };
+    const Wp = w + 3;
+    const ap = h + 2.85;
+    texReboco.repeat.set(Wp / 2, ap / 2);
+    bloco(matReboco, Wp, ap, 0.2, 0, ap / 2, -0.1);
+    const hb = Math.max(0.12, h);
+    bloco(matBase, Wp + 0.02, hb, 0.03, 0, hb / 2, 0.005, false);
+    bloco(matMarquise, Wp + 0.3, 0.1, 1, 0, ap + 0.05, 0.3);
+
+    // porta de vidro de correr, apoiada no nível do deck
+    const dw = Math.max(0.9, Math.min(2.4, w - 0.8));
+    const dh = 2.2;
+    const y0 = h;
+    const e = 0.05; // perfil do caixilho
+    const zc = 0.015;
+    bloco(matVidro, dw - 0.04, dh - 0.04, 0.012, 0, y0 + dh / 2, 0.004, false);
+    bloco(matCaixilho, dw, e, 0.05, 0, y0 + dh - e / 2, zc);
+    bloco(matCaixilho, dw, e * 0.8, 0.05, 0, y0 + e * 0.4, zc);
+    bloco(matCaixilho, e, dh, 0.05, -dw / 2 + e / 2, y0 + dh / 2, zc);
+    bloco(matCaixilho, e, dh, 0.05, dw / 2 - e / 2, y0 + dh / 2, zc);
+    if (dw > 1.4) {
+      bloco(matCaixilho, e * 0.8, dh, 0.06, 0, y0 + dh / 2, zc + 0.008);
+      bloco(matCaixilho, 0.02, 0.3, 0.04, -0.06, y0 + 1.05, zc + 0.04);
+      bloco(matCaixilho, 0.02, 0.3, 0.04, 0.06, y0 + 1.05, zc + 0.04);
+    }
+
+    // janelas dos dois lados, quando cabem
+    const ww = 1.2;
+    const wh = 1.05;
+    const xj = dw / 2 + 0.7 + ww / 2;
+    if (xj + ww / 2 <= Wp / 2 - 0.35) {
+      for (const lado of [-1, 1]) {
+        const x = lado * xj;
+        const yb = h + 1.05;
+        bloco(matVidro, ww - 0.04, wh - 0.04, 0.012, x, yb + wh / 2, 0.004, false);
+        bloco(matCaixilho, ww, e, 0.05, x, yb + wh - e / 2, zc);
+        bloco(matCaixilho, ww, e, 0.05, x, yb + e / 2, zc);
+        bloco(matCaixilho, e, wh, 0.05, x - ww / 2 + e / 2, yb + wh / 2, zc);
+        bloco(matCaixilho, e, wh, 0.05, x + ww / 2 - e / 2, yb + wh / 2, zc);
+        bloco(matCaixilho, e * 0.8, wh, 0.055, x, yb + wh / 2, zc + 0.004);
+        bloco(matMarquise, ww + 0.12, 0.04, 0.09, x, yb - 0.02, 0.045);
+      }
+    }
+  }
 
   // materiais
   const texturas = {};
@@ -328,22 +487,35 @@ export function iniciar3D(sim) {
         { x: w / 2 + 0.01, y: fy, z: l / 2, sx: l, sy: fh, sz: 0.02, r: -Math.PI / 2, c: 0.9 },
       );
     }
+    // degraus: base recuada e piso feito com as mesmas tábuas do deck
     const nd = degrausDe(S);
     const ld = Math.min(w, CONFIG.larguraMaximaDegrau);
-    const pd = CONFIG.profundidadeDegrau;
+    const { nt, prof: pd } = pisadaDegrau(bw, g);
+    const bocel = 0.025; // a pisada avança um pouco sobre o espelho
     let profDegraus = 0;
+    const pisadas = [];
     for (let j = 1; j <= nd; j++) {
       const topo = h - (j * h) / (nd + 1);
-      acab.push({
-        x: 0,
-        y: topo / 2,
-        z: l + (j - 0.5) * pd,
-        sx: ld,
-        sy: topo,
-        sz: pd,
-        c: 0.8 + rnd() * 0.2,
-      });
-      profDegraus = j * pd;
+      const z0 = l + 0.02 + (j - 1) * pd;
+      const base = topo - T;
+      if (base > 0.005) {
+        const sz = pd - bocel;
+        acab.push({ x: 0, y: base / 2, z: z0 + sz / 2, sx: ld - 0.04, sy: base, sz, c: 0.62 });
+      }
+      for (let k = 0; k < nt; k++) {
+        pisadas.push({
+          x: 0,
+          y: topo - T / 2,
+          z: z0 + k * (bw + g) + bw / 2,
+          c: 0.82 + rnd() * 0.26,
+        });
+      }
+      profDegraus = 0.02 + j * pd;
+    }
+    if (pisadas.length) {
+      const geoPisada = geometriaTabua(THREE, ld, T, bw, raio);
+      geometrias.push(geoPisada);
+      instanciar(geoPisada, matTabua, pisadas, !S.frame);
     }
     if (S.rail) {
       const trecho = (ax, az, bx, bz) => {
@@ -397,12 +569,13 @@ export function iniciar3D(sim) {
     }
     instanciar(caixa, matAcab, acab);
 
-    // parede e porta
-    const ap = h + 2.7;
-    parede.scale.set(w + 3, ap, 0.18);
-    parede.position.set(0, ap / 2, -0.09);
-    porta.scale.set(Math.min(1.8, w - 0.3), 2.1, 0.03);
-    porta.position.set(0, h + 1.05, 0.005);
+    // fachada e piso em volta
+    construirFachada(w, h);
+    const Wpiso = w + 6;
+    const Lpiso = l + profDegraus + 3.5;
+    piso.scale.set(Wpiso, Lpiso, 1);
+    piso.position.set(0, 0.002, Lpiso / 2);
+    texPiso.repeat.set(Wpiso / 2.4, Lpiso / 2.4);
 
     // alças
     alcaW.position.set(w / 2 + 0.38, h + 0.03, l / 2);
@@ -581,7 +754,7 @@ export function iniciar3D(sim) {
         const w = Math.round(Math.min(max, Math.max(min, 2 * (ponto.x - 0.38))) * 10) / 10;
         if (w !== S.w) sim.definir({ w }, 'arrasto');
       } else {
-        const extra = degrausDe(S) * CONFIG.profundidadeDegrau;
+        const extra = degrausDe(S) * pisadaDegrau(S.bw, S.gap / 1000).prof;
         const l = Math.round(Math.min(max, Math.max(min, ponto.z - 0.38 - extra)) * 10) / 10;
         if (l !== S.l) sim.definir({ l }, 'arrasto');
       }
