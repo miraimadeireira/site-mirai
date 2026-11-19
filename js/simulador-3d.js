@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { CONFIG } from './config.js';
 import { DECKS } from './data.js';
 import { texturaMadeira } from './textura.js';
@@ -12,6 +11,52 @@ import { $, formatar, reduzMovimento } from './util.js';
 const VERDE = 0x1f4526;
 const VERDE_HOVER = 0x2b5a35;
 const GRAFITE = 0x2b2b28;
+
+// Tábua extrudada a partir do perfil real: cantos de cima arredondados (raio do deck),
+// cantos de baixo quase retos. Comprimento no eixo X, largura no Z, espessura no Y.
+function geometriaTabua(THREE_, comp, esp, larg, raioTopo) {
+  const r = Math.min(raioTopo, esp * 0.48, larg * 0.45);
+  const rb = Math.min(0.0015, larg * 0.1);
+  const x0 = -larg / 2;
+  const x1 = larg / 2;
+  const y0 = -esp / 2;
+  const y1 = esp / 2;
+  const p = new THREE_.Shape();
+  p.moveTo(x0 + rb, y0);
+  p.lineTo(x1 - rb, y0);
+  p.quadraticCurveTo(x1, y0, x1, y0 + rb);
+  p.lineTo(x1, y1 - r);
+  p.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+  p.lineTo(x0 + r, y1);
+  p.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false);
+  p.lineTo(x0, y0 + rb);
+  p.quadraticCurveTo(x0, y0, x0 + rb, y0);
+  // UV: veio da madeira ao longo do comprimento
+  const uv = {
+    generateTopUV(_g, v, a, b, c) {
+      return [a, b, c].map(
+        (i) => new THREE_.Vector2((v[i * 3] - x0) / larg, (v[i * 3 + 1] - y0) / esp),
+      );
+    },
+    generateSideWallUV(_g, v, a, b, c, d) {
+      const horiz = Math.abs(v[a * 3 + 1] - v[b * 3 + 1]) < Math.abs(v[a * 3] - v[b * 3]);
+      return [a, b, c, d].map((i) => {
+        const across = horiz ? (v[i * 3] - x0) / larg : (v[i * 3 + 1] - y0) / esp;
+        return new THREE_.Vector2(v[i * 3 + 2] / comp, across);
+      });
+    },
+  };
+  const geo = new THREE_.ExtrudeGeometry(p, {
+    depth: comp,
+    bevelEnabled: false,
+    curveSegments: 10,
+    UVGenerator: uv,
+  });
+  geo.rotateY(Math.PI / 2);
+  geo.translate(-comp / 2, 0, 0);
+  geo.computeVertexNormals();
+  return geo;
+}
 
 export function iniciar3D(sim) {
   const palco = $('palco');
@@ -204,8 +249,8 @@ export function iniciar3D(sim) {
     matTabua.depthWrite = !S.frame;
     matTabua.needsUpdate = matAcab.needsUpdate = true;
 
-    // tábuas (bordas arredondadas no perfil boleado)
-    const raio = deck.perfil === 'boleado' ? 0.009 : 0.003;
+    // tábuas com o perfil de cada deck
+    const raio = deck.raioBorda;
     const n = Math.ceil((Sp + g) / (bw + g) - 1e-9);
     const cheias = [];
     let ultima = null;
@@ -218,7 +263,7 @@ export function iniciar3D(sim) {
       if (larg < bw - 1e-6) ultima = { ...item, larg };
       else cheias.push(item);
     }
-    const geoTabua = new RoundedBoxGeometry(R, T, bw, 2, Math.min(raio, T / 2 - 0.001));
+    const geoTabua = geometriaTabua(THREE, R, T, bw, raio);
     geometrias.push(geoTabua);
     instanciar(geoTabua, matTabua, cheias, !S.frame);
     // fundo escuro logo abaixo das tábuas: as juntas aparecem como linhas definidas
@@ -230,13 +275,7 @@ export function iniciar3D(sim) {
         false,
       );
     if (ultima) {
-      const geoUlt = new RoundedBoxGeometry(
-        R,
-        T,
-        ultima.larg,
-        2,
-        Math.min(raio, ultima.larg / 2 - 0.001, T / 2 - 0.001),
-      );
+      const geoUlt = geometriaTabua(THREE, R, T, ultima.larg, raio);
       geometrias.push(geoUlt);
       instanciar(geoUlt, matTabua, [ultima], !S.frame);
     }
@@ -424,13 +463,21 @@ export function iniciar3D(sim) {
   controles.dampingFactor = 0.09;
   controles.enablePan = false;
   controles.maxPolarAngle = Math.PI * 0.47;
-  controles.minDistance = 2;
+  controles.minDistance = 0.4;
   controles.maxDistance = 40;
 
   const DIRECOES = {
     perspectiva: new THREE.Vector3(0.6, 0.52, 1).normalize(),
     planta: new THREE.Vector3(0, 1, 0.0008).normalize(),
     frontal: new THREE.Vector3(0, 0.22, 1).normalize(),
+    detalhe: new THREE.Vector3(1, 0.42, 0.85).normalize(),
+  };
+  // alvo da câmera: o centro do deck, ou o canto da frente na vista de detalhe
+  const alvoDetalhe = new THREE.Vector3();
+  const alvoDaVista = () => {
+    if (vistaAtual !== 'detalhe') return alvoCam;
+    const S = sim.estado();
+    return alvoDetalhe.set(S.w / 2 - 0.12, S.h - 0.02, S.l - 0.12);
   };
   let vistaAtual = 'perspectiva';
   const transicao = {
@@ -444,11 +491,16 @@ export function iniciar3D(sim) {
   function enquadrar(vista = vistaAtual, animar = true) {
     vistaAtual = vista;
     const S = sim.estado();
-    const fator = { planta: 1.85, frontal: 1.4, perspectiva: 1.25 }[vista];
-    const base = Math.max(S.w, S.l + 1.2) * fator + 3.4;
-    const d = base * Math.max(1, 1.15 / camera.aspect);
-    transicao.para.copy(alvoCam).addScaledVector(DIRECOES[vista], d);
-    controles.target.copy(alvoCam);
+    const alvo = alvoDaVista();
+    let d;
+    if (vista === 'detalhe') {
+      d = 0.75 * Math.max(1, 1.15 / camera.aspect);
+    } else {
+      const fator = { planta: 1.85, frontal: 1.4, perspectiva: 1.25 }[vista];
+      d = (Math.max(S.w, S.l + 1.2) * fator + 3.4) * Math.max(1, 1.15 / camera.aspect);
+    }
+    transicao.para.copy(alvo).addScaledVector(DIRECOES[vista], d);
+    controles.target.copy(alvo);
     transicao.duracao = 700;
     if (animar && !semMovimento) {
       transicao.de.copy(camera.position);
@@ -605,8 +657,9 @@ export function iniciar3D(sim) {
       reenquadrar = false;
       enquadrar(vistaAtual);
     }
-    if (controles.target.distanceToSquared(alvoCam) > 1e-6) {
-      controles.target.lerp(alvoCam, 0.18);
+    const alvo = alvoDaVista();
+    if (controles.target.distanceToSquared(alvo) > 1e-6) {
+      controles.target.lerp(alvo, 0.18);
       continuar = true;
     }
     if (transicao.t < 1) {

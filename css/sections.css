@@ -456,7 +456,7 @@
 
 .opcao-deck {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr) 56px;
   align-items: center;
   gap: 12px;
   min-height: 48px;
@@ -475,8 +475,21 @@
 }
 
 .opcao-deck small {
+  display: block;
   font-size: 12px;
   color: var(--escuro-suave);
+}
+
+.opcao-deck .perfil {
+  width: 56px;
+  height: 22px;
+  fill: rgba(255, 255, 255, 0.16);
+  stroke: var(--escuro-texto);
+  stroke-width: 1.2;
+}
+
+.opcao-deck:has(input:checked) .perfil {
+  fill: rgba(255, 255, 255, 0.32);
 }
 
 .opcao-deck:has(input:checked) {

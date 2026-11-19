@@ -21,6 +21,7 @@ export const DECKS = [
     selo: 'Premium',
     foto: 'deck-cumaru-boleado-card',
     perfil: 'boleado',
+    raioBorda: 0.011,
     cor: { base: '#8B5A33', escuro: '#4E2E17', claro: '#B37C4B' },
     texto:
       'Bordas arredondadas, confortáveis para pisar descalço. Visual sofisticado e resistente para áreas externas.',
@@ -37,6 +38,7 @@ export const DECKS = [
     selo: 'Premium',
     foto: 'deck-cumaru-europeu-card',
     perfil: 'reto',
+    raioBorda: 0.0025,
     cor: { base: '#965F37', escuro: '#55321A', claro: '#BC8452' },
     texto:
       'O mesmo cumaru denso e durável, em outro perfil de acabamento. A equipe confirma as medidas disponíveis.',
@@ -53,7 +55,8 @@ export const DECKS = [
     selo: 'Mais vendido',
     foto: 'deck-pinus-tratado-card',
     perfil: 'boleado',
-    cor: { base: '#C9A469', escuro: '#8C6A38', claro: '#E4C890', nos: true },
+    raioBorda: 0.009,
+    cor: { base: '#C2B871', escuro: '#7F773A', claro: '#DCD495', nos: true },
     texto:
       'Madeira de reflorestamento tratada, a opção mais em conta da linha. Com verniz marítimo em dia, vai bem no litoral.',
     ficha: [

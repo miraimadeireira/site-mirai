@@ -34,6 +34,17 @@ const MODELOS = [
 
 export const deckPorId = (id) => DECKS.find((d) => d.id === id) || DECKS[0];
 
+// Desenho do perfil da tábua (corte), com a espessura exagerada para o arredondado aparecer
+function perfilSvg(raio) {
+  const W = 50;
+  const H = 16;
+  const x = 3;
+  const y = 3;
+  const r = Math.max(1, Math.min(H * 0.48, (raio / CONFIG.espessuraTabua) * H));
+  const d = `M${x} ${y + H}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}H${x + W - r}A${r} ${r} 0 0 1 ${x + W} ${y + r}V${y + H}Z`;
+  return `<svg class="perfil" viewBox="0 0 56 22" aria-hidden="true"><path d="${d}"/></svg>`;
+}
+
 function normalizar(s) {
   for (const [k, [min, max]] of Object.entries(CONFIG.limites)) {
     const v = Number(s[k]);
@@ -165,7 +176,8 @@ export function criarSimulador() {
   // opções de deck com miniatura da textura
   $('opcoesDeck').innerHTML = DECKS.map((d, i) => {
     const mini = texturaMadeira(d.cor, i + 3, 160, 160).toDataURL('image/jpeg', 0.85);
-    return `<label class="opcao-deck"><input class="oculto" type="radio" name="sp" value="${d.id}"><i style="background-image:url(${mini})"></i><span>${d.nome}</span><small>${d.selo}</small></label>`;
+    const acabamento = (d.ficha.find(([k]) => k === 'Acabamento') || [])[1] || '';
+    return `<label class="opcao-deck"><input class="oculto" type="radio" name="sp" value="${d.id}"><i style="background-image:url(${mini})"></i><span>${d.nome}<small>${acabamento}</small></span>${perfilSvg(d.raioBorda)}</label>`;
   }).join('');
 
   $('segLargura').innerHTML = CONFIG.largurasTabua
