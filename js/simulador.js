@@ -171,6 +171,7 @@ export function criarSimulador() {
   const S = normalizar({ ...PADRAO, ...(doHash || salvo || {}) });
   const historico = [];
   let ultimoRegistro = 0;
+  let capturar = null; // preenchido pelo módulo 3D
   const ouvintes = [];
 
   // opções de deck com miniatura da textura
@@ -235,6 +236,9 @@ export function criarSimulador() {
       .map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`)
       .join('');
     $('waSim').href = linkWhatsApp(mensagem(S, c));
+    $('barraArea').textContent = `${formatar(c.area)} m²`;
+    $('barraDeck').textContent = `${formatar(S.w)} × ${formatar(S.l)} m · ${deck.nome}`;
+    $('barraWa').href = $('waSim').href;
     $('sNota').textContent =
       `Estimativa com ${CONFIG.perdaPercentual}% de perda nas tábuas, barrotes a cada ${Math.round(CONFIG.espacamentoBarrotes * 100)} cm e pilares a cada ${formatar(CONFIG.espacamentoPilares, 1)} m. A lista final é conferida pela equipe da Mirai.`;
   }
@@ -349,6 +353,115 @@ export function criarSimulador() {
     }
   });
 
+  const carregarImagem = (src) =>
+    new Promise((ok, falha) => {
+      const im = new Image();
+      im.onload = () => ok(im);
+      im.onerror = falha;
+      im.src = src;
+    });
+
+  // Monta a imagem do deck: cena 3D + cotas + faixa com logo e medidas
+  async function gerarImagem() {
+    const cap = capturar();
+    const cena = await carregarImagem(cap.url);
+    const esc = cena.width / cap.largura;
+    const faixa = Math.round(84 * esc);
+    const c = document.createElement('canvas');
+    c.width = cena.width;
+    c.height = cena.height + faixa;
+    const g = c.getContext('2d');
+    const fundo = g.createRadialGradient(c.width / 2, 0, 0, c.width / 2, 0, c.width * 0.8);
+    fundo.addColorStop(0, '#f3f2ee');
+    fundo.addColorStop(1, '#d9d7cf');
+    g.fillStyle = fundo;
+    g.fillRect(0, 0, c.width, cena.height);
+    g.drawImage(cena, 0, 0);
+    // cotas
+    g.font = `500 ${12 * esc}px Inter, system-ui, sans-serif`;
+    g.textBaseline = 'middle';
+    for (const t of cap.cotas) {
+      const largura = g.measureText(t.texto).width + 12 * esc;
+      const altura = 20 * esc;
+      const x = t.x * esc - largura / 2;
+      const y = t.y * esc - altura / 2;
+      g.fillStyle = '#1a1a18';
+      g.beginPath();
+      g.roundRect(x, y, largura, altura, 3 * esc);
+      g.fill();
+      g.fillStyle = '#fff';
+      g.fillText(t.texto, x + 6 * esc, t.y * esc + 0.5 * esc);
+    }
+    // faixa com a marca
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, cena.height, c.width, faixa);
+    g.fillStyle = '#dedbd2';
+    g.fillRect(0, cena.height, c.width, Math.max(1, esc));
+    try {
+      const logo = await carregarImagem('img/logo-mirai.svg');
+      const lh = faixa * 0.56;
+      g.drawImage(logo, 20 * esc, cena.height + (faixa - lh) / 2, (lh * 1197) / 505, lh);
+    } catch {
+      /* segue sem a logo */
+    }
+    const deck = deckPorId(S.sp);
+    const calc = calcular(S);
+    g.textAlign = 'right';
+    g.fillStyle = '#1a1a18';
+    g.font = `600 ${17 * esc}px "Inter Tight", Inter, system-ui, sans-serif`;
+    g.fillText(
+      `${deck.nome} · ${formatar(S.w)} × ${formatar(S.l)} m (${formatar(calc.area)} m²)`,
+      c.width - 20 * esc,
+      cena.height + faixa * 0.38,
+    );
+    g.fillStyle = '#45453f';
+    g.font = `400 ${13 * esc}px Inter, system-ui, sans-serif`;
+    g.fillText(
+      `Simulação no site · WhatsApp ${EMPRESA.whatsappExibicao}`,
+      c.width - 20 * esc,
+      cena.height + faixa * 0.68,
+    );
+    return c;
+  }
+
+  async function salvarImagem() {
+    if (!capturar) {
+      avisar('Aguarde o 3D carregar para salvar a imagem.');
+      return;
+    }
+    track('simulador_imagem');
+    const tela = await gerarImagem();
+    const blob = await new Promise((ok) => tela.toBlob(ok, 'image/jpeg', 0.92));
+    if (!blob) {
+      avisar('Não foi possível gerar a imagem.');
+      return;
+    }
+    const arquivo = new File([blob], 'deck-mirai.jpg', { type: 'image/jpeg' });
+    const celular = matchMedia('(pointer: coarse)').matches;
+    if (celular && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      try {
+        await navigator.share({
+          files: [arquivo],
+          title: 'Meu deck · Madeireira Mirai',
+          text: mensagem(S, calcular(S)),
+        });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'deck-mirai.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    avisar('Imagem do deck salva.');
+  }
+  $('bImagem').addEventListener('click', salvarImagem);
+  $('bImagem2').addEventListener('click', salvarImagem);
+
   const imprimir = () => {
     montarFolha();
     track('simulador_imprimir');
@@ -386,6 +499,12 @@ export function criarSimulador() {
   });
 
   function montarFolha() {
+    let foto = '';
+    try {
+      foto = capturar ? capturar().url : '';
+    } catch {
+      foto = '';
+    }
     const c = calcular(S);
     const deck = deckPorId(S.sp);
     const data = new Date().toLocaleDateString('pt-BR');
@@ -408,6 +527,7 @@ export function criarSimulador() {
       <header><img src="img/logo-mirai.svg" alt="Madeireira Mirai"><span>${data}</span></header>
       <h1>Resumo do deck simulado</h1>
       <p>Estimativa gerada pelo simulador do site. A lista final é conferida pela equipe.</p>
+      ${foto ? `<img class="foto-deck" src="${foto}" alt="Deck simulado em 3D">` : ''}
       <h2>Configuração</h2>${tabela(config)}
       <h2>Lista de material estimada</h2>${tabela(linhasMaterial(S, c))}
       <footer>${EMPRESA.nome} · ${EMPRESA.endereco} · WhatsApp ${EMPRESA.whatsappExibicao} · Tel. ${EMPRESA.telefoneExibicao} · ${EMPRESA.email}<br>
@@ -427,5 +547,8 @@ export function criarSimulador() {
     desfazer,
     restaurar,
     aoMudar: (f) => ouvintes.push(f),
+    registrarCaptura: (f) => {
+      capturar = f;
+    },
   };
 }

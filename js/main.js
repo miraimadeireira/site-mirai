@@ -68,11 +68,22 @@ ligarRastreamento();
 const topo = $('topo');
 const whatsFixo = $('whatsFixo');
 const hero = $('inicio');
+const secaoSim = $('simulador');
+const resumoSim = document.querySelector('.resumo');
+const barraSim = $('barraSim');
 function aoRolar() {
   topo.classList.toggle('rolou', scrollY > 8);
-  whatsFixo.classList.toggle('visivel', hero.getBoundingClientRect().bottom < 0);
+  // celular: barra com a área e o orçamento enquanto o cliente mexe no simulador
+  const s = secaoSim.getBoundingClientRect();
+  const r = resumoSim.getBoundingClientRect();
+  const barra = innerWidth <= 900 && s.top < innerHeight * 0.4 && r.top > innerHeight - 40;
+  barraSim.classList.toggle('visivel', barra);
+  barraSim.setAttribute('aria-hidden', String(!barra));
+  $('barraWa').tabIndex = barra ? 0 : -1;
+  whatsFixo.classList.toggle('visivel', hero.getBoundingClientRect().bottom < 0 && !barra);
 }
 addEventListener('scroll', aoRolar, { passive: true });
+addEventListener('resize', aoRolar);
 aoRolar();
 
 // link ativo conforme a seção visível

@@ -710,6 +710,30 @@ export function iniciar3D(sim) {
     if (visivel) pedirQuadro();
   }).observe(palco);
 
+  // captura da cena para a imagem e para a folha de impressão
+  sim.registrarCaptura(() => {
+    if (reconstruir) {
+      reconstruir = false;
+      construir(sim.estado());
+    }
+    // a imagem sai sem as alças de arraste
+    alcaW.visible = alcaL.visible = false;
+    renderer.render(cena, camera);
+    const url = renderer.domElement.toDataURL('image/png');
+    alcaW.visible = alcaL.visible = true;
+    renderer.render(cena, camera);
+    const W = palco.clientWidth;
+    const H = palco.clientHeight;
+    const lista = [];
+    for (const c of cotas) {
+      v.copy(c.p).project(camera);
+      if (c.ativa && v.z < 1) {
+        lista.push({ texto: c.el.textContent, x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H });
+      }
+    }
+    return { url, largura: W, cotas: lista };
+  });
+
   construir(sim.estado());
   reconstruir = false;
   enquadrar('perspectiva', false);

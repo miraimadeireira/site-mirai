@@ -33,6 +33,7 @@
 
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -152,6 +153,11 @@
           />
         </symbol>
         <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+        <symbol id="i-baixar" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M12 15V3" />
+        </symbol>
         <symbol id="i-cubo" viewBox="0 0 24 24">
           <path
             d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
@@ -348,6 +354,14 @@
                   </button>
                   <button
                     type="button"
+                    id="bImagem"
+                    title="Salvar imagem do deck"
+                    aria-label="Salvar imagem do deck"
+                  >
+                    <svg class="icone" aria-hidden="true"><use href="#i-baixar" /></svg>
+                  </button>
+                  <button
+                    type="button"
                     id="bImprimir"
                     title="Imprimir resumo"
                     aria-label="Imprimir resumo"
@@ -495,6 +509,9 @@
                   Pedir orçamento deste deck
                   <svg class="icone" aria-hidden="true"><use href="#i-seta" /></svg>
                 </a>
+                <button type="button" class="btn btn-secundario" id="bImagem2">
+                  <svg class="icone" aria-hidden="true"><use href="#i-baixar" /></svg>Salvar imagem
+                </button>
                 <button type="button" class="btn btn-secundario" id="bImprimir2">
                   <svg class="icone" aria-hidden="true"><use href="#i-imprimir" /></svg>Imprimir
                   resumo
@@ -860,6 +877,22 @@
         />
       </svg>
     </a>
+
+    <div class="barra-sim" id="barraSim" aria-hidden="true">
+      <div>
+        <strong id="barraArea" class="num">12,60 m²</strong>
+        <span id="barraDeck"></span>
+      </div>
+      <a
+        class="btn btn-primario btn-pequeno"
+        id="barraWa"
+        target="_blank"
+        rel="noopener"
+        tabindex="-1"
+        data-track="whatsapp_barra_simulador"
+        >Pedir orçamento</a
+      >
+    </div>
 
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
     <div class="sr-only" id="anuncio" aria-live="polite"></div>
