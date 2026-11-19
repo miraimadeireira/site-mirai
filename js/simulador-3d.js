@@ -23,7 +23,12 @@ export function iniciar3D(sim) {
   const semMovimento = reduzMovimento();
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, toque ? 1.5 : 2));
+  // nitidez: no computador renderiza em resolução maior que a tela (supersampling);
+  // no celular usa a densidade da tela, limitada a 2
+  const densidade = toque
+    ? Math.min(devicePixelRatio, 2)
+    : Math.min(2, Math.max(devicePixelRatio, 1.75));
+  renderer.setPixelRatio(densidade);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.95;
@@ -41,18 +46,25 @@ export function iniciar3D(sim) {
   const sol = new THREE.DirectionalLight(0xffe2bd, 2.1);
   sol.position.set(-6, 9, 8);
   sol.castShadow = true;
-  sol.shadow.mapSize.set(2048, 2048);
-  Object.assign(sol.shadow.camera, {
-    left: -13,
-    right: 13,
-    top: 13,
-    bottom: -13,
-    near: 1,
-    far: 40,
-  });
-  sol.shadow.bias = -0.0004;
-  sol.shadow.normalBias = 0.02;
+  const tamSombra = Math.min(toque ? 2048 : 4096, renderer.capabilities.maxTextureSize);
+  sol.shadow.mapSize.set(tamSombra, tamSombra);
+  sol.shadow.camera.near = 1;
+  sol.shadow.camera.far = 40;
+  sol.shadow.bias = -0.0003;
+  sol.shadow.normalBias = 0.015;
+  sol.shadow.radius = 3;
   cena.add(sol);
+  cena.add(sol.target);
+  // a área da sombra acompanha o tamanho do deck: sombra mais definida
+  const ajustarSombra = (w, l, extra) => {
+    const meio = Math.hypot(w, l + extra) / 2 + 2.5;
+    const cx = 0;
+    const cz = (l + extra) / 2;
+    sol.target.position.set(cx, 0, cz);
+    sol.position.set(cx - 6, 9, cz + 8);
+    Object.assign(sol.shadow.camera, { left: -meio, right: meio, top: meio, bottom: -meio });
+    sol.shadow.camera.updateProjectionMatrix();
+  };
   cena.add(new THREE.HemisphereLight(0xfff6ea, 0x8f877a, 0.35));
 
   // chão: só a sombra de contato
@@ -82,7 +94,7 @@ export function iniciar3D(sim) {
   const textura = (id) => {
     if (!texturas[id]) {
       const deck = DECKS.find((d) => d.id === id) || DECKS[0];
-      const t = new THREE.CanvasTexture(texturaMadeira(deck.cor, 11, 1024, 128));
+      const t = new THREE.CanvasTexture(texturaMadeira(deck.cor, 11, 2048, 256));
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = renderer.capabilities.getMaxAnisotropy();
       texturas[id] = t;
@@ -92,6 +104,7 @@ export function iniciar3D(sim) {
   const matTabua = new THREE.MeshStandardMaterial({ roughness: 0.62, envMapIntensity: 0.55 });
   const matAcab = new THREE.MeshStandardMaterial({ roughness: 0.66, envMapIntensity: 0.5 });
   const matBarrote = new THREE.MeshStandardMaterial({ color: 0x7b6a52, roughness: 0.9 });
+  const matJunta = new THREE.MeshStandardMaterial({ color: 0x24170e, roughness: 1 });
   const matPilar = new THREE.MeshStandardMaterial({ color: 0x5b4c3a, roughness: 0.9 });
   const matCota = new THREE.LineBasicMaterial({ color: GRAFITE });
 
@@ -201,13 +214,21 @@ export function iniciar3D(sim) {
       const larg = Math.min(bw, Sp - s0);
       if (larg < 0.005) break;
       const [x, z] = paraMundo(R / 2, s0 + larg / 2);
-      const item = { x, y: h - T / 2, z, r: par ? 0 : -Math.PI / 2, c: 0.86 + rnd() * 0.2 };
+      const item = { x, y: h - T / 2, z, r: par ? 0 : -Math.PI / 2, c: 0.82 + rnd() * 0.26 };
       if (larg < bw - 1e-6) ultima = { ...item, larg };
       else cheias.push(item);
     }
     const geoTabua = new RoundedBoxGeometry(R, T, bw, 2, Math.min(raio, T / 2 - 0.001));
     geometrias.push(geoTabua);
     instanciar(geoTabua, matTabua, cheias, !S.frame);
+    // fundo escuro logo abaixo das tábuas: as juntas aparecem como linhas definidas
+    if (!S.frame)
+      instanciar(
+        caixa,
+        matJunta,
+        [{ x: 0, y: h - T - 0.002, z: l / 2, sx: w - 0.01, sy: 0.003, sz: l - 0.01 }],
+        false,
+      );
     if (ultima) {
       const geoUlt = new RoundedBoxGeometry(
         R,
@@ -394,6 +415,7 @@ export function iniciar3D(sim) {
     cotas[2].ativa = h >= 0.1;
 
     alvoCam.set(0, h * 0.5, l / 2 + profDegraus / 2);
+    ajustarSombra(w, l, profDegraus + 1);
   }
 
   // ---------- câmera ----------
