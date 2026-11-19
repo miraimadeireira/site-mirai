@@ -1,0 +1,482 @@
+/* ---------- botões ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--r-6);
+  border: 1px solid transparent;
+  font-family: var(--fonte-texto);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--rapido),
+    border-color var(--rapido),
+    color var(--rapido);
+}
+
+.btn .icone {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-primario {
+  background: var(--verde-700);
+  color: var(--branco);
+}
+
+.btn-primario:hover {
+  background: var(--verde-800);
+}
+
+.btn-secundario {
+  background: transparent;
+  border-color: var(--linha-forte);
+  color: var(--grafite);
+}
+
+.btn-secundario:hover {
+  border-color: var(--grafite);
+}
+
+.btn-pequeno {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.escuro .btn-primario {
+  background: var(--papel);
+  color: var(--verde-800);
+}
+
+.escuro .btn-primario:hover {
+  background: var(--branco);
+}
+
+.escuro .btn-secundario {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: var(--escuro-texto);
+}
+
+.escuro .btn-secundario:hover {
+  border-color: var(--escuro-texto);
+}
+
+.link-seta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--verde-700);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.link-seta .icone {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--rapido) var(--curva);
+}
+
+.link-seta:hover .icone {
+  transform: translateX(3px);
+}
+
+.escuro .link-seta {
+  color: var(--escuro-texto);
+}
+
+/* ---------- rótulo de seção ---------- */
+.rotulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--t-13);
+  font-weight: 500;
+  color: var(--grafite-3);
+  margin-bottom: var(--e-3);
+}
+
+.rotulo::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: currentColor;
+}
+
+.rotulo b {
+  font-weight: 500;
+  color: var(--grafite);
+  font-variant-numeric: tabular-nums;
+}
+
+.escuro .rotulo {
+  color: var(--escuro-suave);
+}
+
+.escuro .rotulo b {
+  color: var(--escuro-texto);
+}
+
+.cabeca {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--e-3) var(--e-4);
+  align-items: end;
+  margin-bottom: var(--e-8);
+}
+
+.cabeca > div:first-child {
+  grid-column: 1 / span 6;
+}
+
+.cabeca > p {
+  grid-column: 8 / span 5;
+  color: var(--grafite-2);
+  font-size: 17px;
+}
+
+.escuro .cabeca > p {
+  color: var(--escuro-suave);
+}
+
+@media (max-width: 900px) {
+  .cabeca {
+    grid-template-columns: 1fr;
+    margin-bottom: var(--e-5);
+  }
+
+  .cabeca > div:first-child,
+  .cabeca > p {
+    grid-column: auto;
+  }
+}
+
+/* ---------- selo ---------- */
+.selo {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-4);
+  color: var(--grafite-2);
+}
+
+/* ---------- ficha técnica ---------- */
+.ficha {
+  margin: 0;
+  font-size: var(--t-14);
+}
+
+.ficha div {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--e-2);
+  padding: 10px 0;
+  border-top: 1px solid var(--linha);
+}
+
+.ficha dt {
+  color: var(--grafite-3);
+}
+
+.ficha dd {
+  margin: 0;
+  color: var(--grafite);
+}
+
+/* ---------- cabeçalho ---------- */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(247, 246, 242, 0.94);
+  backdrop-filter: saturate(1.2) blur(10px);
+  border-bottom: 1px solid var(--linha);
+  transition:
+    box-shadow var(--medio),
+    background var(--medio);
+}
+
+.topo.rolou {
+  box-shadow:
+    0 1px 0 var(--linha),
+    0 8px 24px -16px rgba(0, 0, 0, 0.18);
+}
+
+.topo .container {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  height: var(--topo);
+  transition: height var(--medio) var(--curva);
+}
+
+.topo.rolou .container {
+  height: 64px;
+}
+
+.marca img {
+  height: 44px;
+  width: auto;
+  transition: height var(--medio) var(--curva);
+}
+
+.topo.rolou .marca img {
+  height: 36px;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.nav a {
+  position: relative;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--grafite-2);
+  text-decoration: none;
+  border-radius: var(--r-4);
+  transition: color var(--rapido);
+}
+
+.nav a:hover,
+.nav a.ativo {
+  color: var(--grafite);
+}
+
+.nav a.ativo::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 1px;
+  background: var(--grafite);
+}
+
+.botao-menu {
+  display: none;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-6);
+  cursor: pointer;
+}
+
+@media (max-width: 1020px) {
+  .nav,
+  .topo .btn-orcamento {
+    display: none;
+  }
+
+  .botao-menu {
+    display: inline-flex;
+  }
+
+  .marca img {
+    height: 38px;
+  }
+}
+
+/* menu do celular */
+.menu-movel {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--papel);
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--margem) var(--e-4);
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity var(--medio),
+    visibility var(--medio);
+}
+
+.menu-movel.aberto {
+  visibility: visible;
+  opacity: 1;
+}
+
+.menu-movel .barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--topo);
+  border-bottom: 1px solid var(--linha);
+}
+
+.menu-movel .barra img {
+  height: 38px;
+  width: auto;
+}
+
+.menu-movel nav {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--e-2);
+}
+
+.menu-movel nav a {
+  font-family: var(--fonte-titulo);
+  font-size: var(--t-28);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.menu-movel .rodape-menu {
+  margin-top: auto;
+  display: grid;
+  gap: var(--e-2);
+  font-size: var(--t-14);
+  color: var(--grafite-2);
+}
+
+.menu-movel .rodape-menu .btn {
+  width: 100%;
+}
+
+/* botão fixo de WhatsApp */
+.whats-fixo {
+  position: fixed;
+  right: clamp(16px, 2.5vw, 32px);
+  bottom: clamp(16px, 2.5vw, 32px);
+  z-index: 30;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--verde-700);
+  color: var(--branco);
+  border-radius: var(--r-8);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity var(--medio),
+    transform var(--medio) var(--curva),
+    background var(--rapido);
+}
+
+.whats-fixo.visivel {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.whats-fixo:hover {
+  background: var(--verde-800);
+}
+
+.whats-fixo svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- campos ---------- */
+.campo {
+  display: grid;
+  gap: 6px;
+}
+
+.campo label {
+  font-size: var(--t-14);
+  font-weight: 500;
+  color: var(--grafite-2);
+}
+
+.campo label small {
+  font-weight: 400;
+  color: var(--grafite-3);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  font-size: 16px;
+  background: var(--branco);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-4);
+  transition:
+    border-color var(--rapido),
+    box-shadow var(--rapido);
+}
+
+.campo textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--verde-700);
+  box-shadow: 0 0 0 3px rgba(31, 69, 38, 0.14);
+}
+
+.campo [aria-invalid='true'] {
+  border-color: var(--erro);
+}
+
+.campo .erro-msg {
+  font-size: var(--t-13);
+  color: var(--erro);
+  min-height: 0;
+}
+
+.campo .erro-msg:empty {
+  display: none;
+}
+
+/* aviso flutuante */
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 70;
+  transform: translate(-50%, 12px);
+  background: var(--grafite);
+  color: var(--branco);
+  font-size: var(--t-14);
+  padding: 12px 18px;
+  border-radius: var(--r-6);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--medio),
+    transform var(--medio) var(--curva);
+}
+
+.aviso.visivel {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

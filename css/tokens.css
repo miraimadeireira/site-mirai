@@ -1,0 +1,58 @@
+/* Tokens de design da Mirai — mude aqui e o site inteiro acompanha */
+:root {
+  /* cores */
+  --verde-900: #10251a;
+  --verde-800: #15301d;
+  --verde-700: #1f4526;
+  --verde-600: #2b5a35;
+  --papel: #f7f6f2;
+  --papel-2: #efede6;
+  --branco: #ffffff;
+  --grafite: #1a1a18;
+  --grafite-2: #45453f;
+  --grafite-3: #6b6a63;
+  --linha: #dedbd2;
+  --linha-forte: #c9c5ba;
+  --madeira: #a86b3c;
+  --erro: #a3271b;
+
+  /* sobre fundo escuro */
+  --escuro-texto: #f2f1ec;
+  --escuro-suave: #b8c4ba;
+  --escuro-linha: rgba(255, 255, 255, 0.14);
+
+  /* tipografia */
+  --fonte-titulo: 'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fonte-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --t-56: clamp(2.5rem, 1.6rem + 3vw, 3.5rem);
+  --t-40: clamp(2rem, 1.5rem + 1.8vw, 2.5rem);
+  --t-28: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem);
+  --t-20: 1.25rem;
+  --t-16: 1rem;
+  --t-14: 0.875rem;
+  --t-13: 0.8125rem;
+
+  /* espaçamento (escala de 8px) */
+  --e-1: 0.5rem;
+  --e-2: 1rem;
+  --e-3: 1.5rem;
+  --e-4: 2rem;
+  --e-5: 2.5rem;
+  --e-6: 3rem;
+  --e-8: 4rem;
+  --e-10: 5rem;
+  --secao: clamp(4.5rem, 3rem + 5vw, 8rem);
+
+  /* forma */
+  --r-4: 4px;
+  --r-6: 6px;
+  --r-8: 8px;
+  --largura: 80rem;
+  --margem: clamp(1.25rem, 4vw, 3rem);
+  --topo: 80px;
+
+  /* movimento */
+  --rapido: 160ms;
+  --medio: 240ms;
+  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
