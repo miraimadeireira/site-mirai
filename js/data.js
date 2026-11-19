@@ -19,7 +19,7 @@ export const DECKS = [
     id: 'cumaru-boleado',
     nome: 'Cumaru Boleado',
     selo: 'Premium',
-    foto: 'deck-cumaru-boleado',
+    foto: 'deck-cumaru-boleado-card',
     perfil: 'boleado',
     cor: { base: '#8B5A33', escuro: '#4E2E17', claro: '#B37C4B' },
     texto:
@@ -35,7 +35,7 @@ export const DECKS = [
     id: 'cumaru-europeu',
     nome: 'Cumaru Europeu',
     selo: 'Premium',
-    foto: 'deck-cumaru-europeu',
+    foto: 'deck-cumaru-europeu-card',
     perfil: 'reto',
     cor: { base: '#965F37', escuro: '#55321A', claro: '#BC8452' },
     texto:
@@ -51,7 +51,7 @@ export const DECKS = [
     id: 'pinus-tratado',
     nome: 'Pinus Tratado',
     selo: 'Mais vendido',
-    foto: 'deck-pinus-tratado',
+    foto: 'deck-pinus-tratado-card',
     perfil: 'boleado',
     cor: { base: '#C9A469', escuro: '#8C6A38', claro: '#E4C890', nos: true },
     texto:
@@ -75,13 +75,13 @@ export const CATEGORIAS_DESTAQUE = [
   {
     nome: 'Decks',
     texto: 'Cumaru boleado, cumaru europeu e pinus tratado.',
-    foto: 'deck-cumaru-europeu',
+    foto: 'deck-cumaru-europeu-card',
     tipo: 'produto',
   },
   {
     nome: 'Churrasqueiras',
     texto: 'Pré-moldadas: tradicional, lisa, mesclada e gourmet.',
-    foto: 'churrasqueira',
+    foto: 'churrasqueira-card',
     tipo: 'produto',
   },
   {

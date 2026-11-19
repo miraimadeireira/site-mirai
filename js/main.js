@@ -15,17 +15,17 @@ import { criarSimulador } from './simulador.js';
 import { $, reduzMovimento } from './util.js';
 
 const seta = '<svg class="icone" aria-hidden="true"><use href="#i-seta"/></svg>';
-const imagem = (nome, alt, larguras, sizes, extra = '') => {
+const imagem = (nome, alt, larguras, sizes, proporcao = 0.75) => {
   const src = (ext) => larguras.map((w) => `img/${nome}-${w}.${ext} ${w}w`).join(', ');
   const maior = larguras[larguras.length - 1];
-  return `<picture><source type="image/avif" srcset="${src('avif')}" sizes="${sizes}"><source type="image/webp" srcset="${src('webp')}" sizes="${sizes}"><img src="img/${nome}-${maior}.webp" alt="${alt}" width="${maior}" height="${maior}" loading="lazy" decoding="async" ${extra}></picture>`;
+  return `<picture><source type="image/avif" srcset="${src('avif')}" sizes="${sizes}"><source type="image/webp" srcset="${src('webp')}" sizes="${sizes}"><img src="img/${nome}-${maior}.webp" alt="${alt}" width="${maior}" height="${Math.round(maior * proporcao)}" loading="lazy" decoding="async"></picture>`;
 };
 
 // ---------- conteúdo a partir dos dados ----------
 $('decksGrade').innerHTML = DECKS.map(
   (d) => `
   <article class="card revela">
-    <div class="card-foto">${imagem(d.foto, `Tábua de deck ${d.nome}`, [400], '(max-width: 960px) 40vw, 400px')}</div>
+    <div class="card-foto">${imagem(d.foto, `Tábua de deck ${d.nome}`, [640], '(max-width: 620px) 100vw, (max-width: 960px) 40vw, 400px')}</div>
     <div class="card-corpo">
       <div><span class="selo">${d.selo}</span></div>
       <h3>${d.nome}</h3>
@@ -42,7 +42,7 @@ $('decksGrade').innerHTML = DECKS.map(
 $('catDestaque').innerHTML = CATEGORIAS_DESTAQUE.map(
   (c) => `
   <a class="cat-card revela" data-whats="Olá, Mirai! Gostaria de um orçamento de ${c.nome.toLowerCase()}." data-track="whatsapp_categoria" data-track-label="${c.nome}">
-    <div class="foto ${c.tipo === 'produto' ? 'produto' : ''}">${imagem(c.foto, c.nome, [400], '(max-width: 960px) 50vw, 300px')}</div>
+    <div class="foto ${c.tipo === 'produto' ? 'produto' : ''}">${imagem(c.foto, c.nome, c.tipo === 'produto' ? [640] : [400], '(max-width: 960px) 50vw, 300px')}</div>
     <h3>${c.nome}</h3>
     <p>${c.texto}</p>
     <span class="link-seta">Pedir orçamento ${seta}</span>
